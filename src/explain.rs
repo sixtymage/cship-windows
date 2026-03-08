@@ -348,13 +348,15 @@ mod tests {
     fn test_load_with_source_respects_workspace_dir() {
         // Verify that load_with_source accepts workspace_dir parameter (H1 fix)
         let result = crate::config::load_with_source(None, Some("/nonexistent/dir"));
-        // Should fall through to global or default without panicking
+        // Should fall through to global (starship.toml or cship.toml) or default without panicking
         assert!(
             matches!(
                 result.source,
-                crate::config::ConfigSource::Global(_) | crate::config::ConfigSource::Default
+                crate::config::ConfigSource::Global(_)
+                    | crate::config::ConfigSource::DedicatedFile(_)
+                    | crate::config::ConfigSource::Default
             ),
-            "expected Global or Default source for nonexistent workspace dir"
+            "expected Global, DedicatedFile, or Default source for nonexistent workspace dir"
         );
     }
 
