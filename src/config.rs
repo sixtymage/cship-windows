@@ -168,7 +168,8 @@ pub enum ConfigSource {
     ProjectLocal(std::path::PathBuf),
     Global(std::path::PathBuf),
     Override(std::path::PathBuf),
-    /// Config loaded from a dedicated `cship.toml` file (no `[cship]` wrapper needed).
+    /// Config loaded from a dedicated `cship.toml` file.
+    /// Supports both canonical `[cship]` section format and legacy wrapper-free format.
     DedicatedFile(std::path::PathBuf),
     Default,
 }
@@ -301,21 +302,22 @@ fn load_from_path(path: &std::path::Path) -> anyhow::Result<CshipConfig> {
 
 /// Load `CshipConfig` from a dedicated `cship.toml` file at `path`.
 ///
-/// The file is parsed directly as `CshipConfig` (no `[cship]` wrapper needed).
-/// If a top-level `cship` key is detected (user error), emits a `tracing::warn!`
-/// and falls back to `StarshipToml` wrapper extraction (lenient handling, AC#7).
+/// The canonical format uses a `[cship]` section header (parsed via `StarshipToml` wrapper).
+/// Files without a `[cship]` header are treated as legacy wrapper-free format and parsed
+/// directly as `CshipConfig` for backwards compatibility.
 fn load_cship_toml(path: &std::path::Path) -> anyhow::Result<CshipConfig> {
     let content = std::fs::read_to_string(path)
         .map_err(|e| anyhow::anyhow!("cannot read config file {}: {e}", path.display()))?;
     let value: toml::Value = toml::from_str(&content)
         .map_err(|e| anyhow::anyhow!("malformed TOML in {}: {e}", path.display()))?;
     if value.get("cship").is_some() {
-        tracing::warn!("cship.toml should not contain a [cship] section; loading via wrapper");
+        tracing::debug!("loading cship.toml with [cship] section via wrapper");
         let wrapper: StarshipToml = toml::from_str(&content)
             .map_err(|e| anyhow::anyhow!("malformed TOML in {}: {e}", path.display()))?;
         tracing::debug!("loaded config from {} (via wrapper)", path.display());
         return Ok(wrapper.cship.unwrap_or_default());
     }
+    tracing::debug!("loading cship.toml in legacy wrapper-free format");
     let config: CshipConfig = toml::from_str(&content)
         .map_err(|e| anyhow::anyhow!("malformed TOML in {}: {e}", path.display()))?;
     tracing::debug!("loaded config from {}", path.display());
@@ -495,7 +497,7 @@ mod tests {
 
     #[test]
     fn test_cship_toml_with_wrapper_section_still_parses() {
-        // AC#7: a cship.toml with an accidental [cship] wrapper is parsed leniently
+        // AC#5: canonical [cship] format is parsed correctly via StarshipToml wrapper
         let dir = tempfile::tempdir().unwrap();
 
         let cship_path = dir.path().join("cship.toml");
@@ -503,13 +505,34 @@ mod tests {
         writeln!(f, "[cship]\nlines = [\"$cship.agent\"]").unwrap();
 
         let cfg = load_cship_toml(&cship_path).unwrap();
-        // Despite the [cship] wrapper, config is extracted correctly
+        // [cship] is the canonical format — config is extracted correctly
         assert_eq!(cfg.lines.as_ref().unwrap()[0], "$cship.agent");
     }
 
     #[test]
+    fn test_cship_toml_canonical_format_loads_correctly() {
+        // AC#5: cship.toml with [cship] header uses the primary (debug) path
+        let dir = tempfile::tempdir().unwrap();
+
+        let cship_path = dir.path().join("cship.toml");
+        let mut f = std::fs::File::create(&cship_path).unwrap();
+        writeln!(
+            f,
+            "[cship]\nlines = [\"$cship.model $cship.cost $cship.context_bar\"]"
+        )
+        .unwrap();
+
+        // The warn path has been removed; canonical [cship] format loads successfully
+        let cfg = load_cship_toml(&cship_path).unwrap();
+        assert_eq!(
+            cfg.lines.as_ref().unwrap()[0],
+            "$cship.model $cship.cost $cship.context_bar"
+        );
+    }
+
+    #[test]
     fn test_cship_toml_direct_cshipconfig_parsing() {
-        // AC#1: cship.toml is parsed directly as CshipConfig (no [cship] wrapper)
+        // Legacy wrapper-free format (backwards compatible) — no [cship] section header
         let dir = tempfile::tempdir().unwrap();
 
         let cship_path = dir.path().join("cship.toml");

@@ -69,6 +69,7 @@ mkdir -p "$(dirname "$CSHIP_CONFIG")"
 
 CSHIP_BLOCK='# cship — Claude Code statusline
 # Full config reference: https://github.com/stephenleo/cship
+[cship]
 lines = ["$cship.model $cship.cost $cship.context_bar"]
 '
 
