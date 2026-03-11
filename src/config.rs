@@ -82,6 +82,10 @@ pub struct ContextWindowSubfieldConfig {
     pub critical_threshold: Option<f64>,
     pub critical_style: Option<String>,
     pub format: Option<String>,
+    /// When `true`, fires threshold styles when value is BELOW the threshold.
+    /// Use for decreasing-health indicators like `remaining_percentage` (low = bad).
+    /// When set, parent-level thresholds are NOT inherited (they are in the non-inverted domain).
+    pub invert_threshold: Option<bool>,
 }
 
 /// Configuration for `[cship.context_bar]` — visual progress bar with thresholds.

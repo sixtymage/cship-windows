@@ -107,18 +107,31 @@ pub fn render_remaining_percentage(ctx: &Context, cfg: &CshipConfig) -> Option<S
     let style = sub_cfg
         .and_then(|c| c.style.as_deref())
         .or_else(|| cw_cfg.and_then(|c| c.style.as_deref()));
-    let warn_threshold = sub_cfg
-        .and_then(|c| c.warn_threshold)
-        .or_else(|| cw_cfg.and_then(|c| c.warn_threshold));
-    let warn_style = sub_cfg
-        .and_then(|c| c.warn_style.as_deref())
-        .or_else(|| cw_cfg.and_then(|c| c.warn_style.as_deref()));
-    let critical_threshold = sub_cfg
-        .and_then(|c| c.critical_threshold)
-        .or_else(|| cw_cfg.and_then(|c| c.critical_threshold));
-    let critical_style = sub_cfg
-        .and_then(|c| c.critical_style.as_deref())
-        .or_else(|| cw_cfg.and_then(|c| c.critical_style.as_deref()));
+    let invert = sub_cfg.and_then(|c| c.invert_threshold).unwrap_or(false);
+    // When inverted, don't inherit parent thresholds — they live in the non-inverted domain.
+    // Negate both value and thresholds so `val >= thresh` becomes `val <= original_thresh`.
+    let (effective_val, warn_threshold, warn_style, critical_threshold, critical_style) = if invert
+    {
+        let w_thresh = sub_cfg.and_then(|c| c.warn_threshold).map(|t| -t);
+        let c_thresh = sub_cfg.and_then(|c| c.critical_threshold).map(|t| -t);
+        let w_style = sub_cfg.and_then(|c| c.warn_style.as_deref());
+        let c_style = sub_cfg.and_then(|c| c.critical_style.as_deref());
+        (Some(-val), w_thresh, w_style, c_thresh, c_style)
+    } else {
+        let w_thresh = sub_cfg
+            .and_then(|c| c.warn_threshold)
+            .or_else(|| cw_cfg.and_then(|c| c.warn_threshold));
+        let c_thresh = sub_cfg
+            .and_then(|c| c.critical_threshold)
+            .or_else(|| cw_cfg.and_then(|c| c.critical_threshold));
+        let w_style = sub_cfg
+            .and_then(|c| c.warn_style.as_deref())
+            .or_else(|| cw_cfg.and_then(|c| c.warn_style.as_deref()));
+        let c_style = sub_cfg
+            .and_then(|c| c.critical_style.as_deref())
+            .or_else(|| cw_cfg.and_then(|c| c.critical_style.as_deref()));
+        (Some(val), w_thresh, w_style, c_thresh, c_style)
+    };
     if let Some(fmt) = sub_cfg
         .and_then(|c| c.format.as_deref())
         .or_else(|| cw_cfg.and_then(|c| c.format.as_deref()))
@@ -127,7 +140,7 @@ pub fn render_remaining_percentage(ctx: &Context, cfg: &CshipConfig) -> Option<S
             .and_then(|c| c.symbol.as_deref())
             .or_else(|| cw_cfg.and_then(|c| c.symbol.as_deref()));
         let effective_style = crate::ansi::resolve_threshold_style(
-            Some(val),
+            effective_val,
             style,
             warn_threshold,
             warn_style,
@@ -138,7 +151,7 @@ pub fn render_remaining_percentage(ctx: &Context, cfg: &CshipConfig) -> Option<S
     }
     Some(crate::ansi::apply_style_with_threshold(
         &val_str,
-        Some(val),
+        effective_val,
         style,
         warn_threshold,
         warn_style,
@@ -1086,6 +1099,129 @@ mod tests {
         assert!(
             !result.contains("\x1b[32m"),
             "parent green style should NOT appear: {result:?}"
+        );
+    }
+
+    #[test]
+    fn test_remaining_percentage_invert_threshold_fires_when_low() {
+        // invert_threshold=true: warn fires when remaining < warn_threshold (low = bad)
+        let ctx = Context {
+            context_window: Some(ContextWindow {
+                remaining_percentage: Some(15.0), // 15% remaining — below warn=20
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let cfg = CshipConfig {
+            context_window: Some(ContextWindowConfig {
+                remaining_percentage: Some(ContextWindowSubfieldConfig {
+                    invert_threshold: Some(true),
+                    warn_threshold: Some(20.0),
+                    warn_style: Some("yellow".to_string()),
+                    critical_threshold: Some(10.0),
+                    critical_style: Some("bold red".to_string()),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let result = render_remaining_percentage(&ctx, &cfg).unwrap();
+        assert!(
+            result.contains('\x1b'),
+            "expected ANSI for low remaining: {result:?}"
+        );
+        assert!(result.contains("15"), "expected value: {result:?}");
+    }
+
+    #[test]
+    fn test_remaining_percentage_invert_threshold_no_fire_when_high() {
+        // invert_threshold=true: no warn when remaining=85 (healthy)
+        let ctx = Context {
+            context_window: Some(ContextWindow {
+                remaining_percentage: Some(85.0),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let cfg = CshipConfig {
+            context_window: Some(ContextWindowConfig {
+                remaining_percentage: Some(ContextWindowSubfieldConfig {
+                    invert_threshold: Some(true),
+                    warn_threshold: Some(20.0),
+                    warn_style: Some("yellow".to_string()),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let result = render_remaining_percentage(&ctx, &cfg).unwrap();
+        assert!(
+            !result.contains('\x1b'),
+            "expected no ANSI for high remaining: {result:?}"
+        );
+    }
+
+    #[test]
+    fn test_remaining_percentage_invert_critical_fires_below_critical_threshold() {
+        // invert_threshold=true: critical fires when remaining < critical_threshold (10)
+        let ctx = Context {
+            context_window: Some(ContextWindow {
+                remaining_percentage: Some(5.0), // 5% remaining — critically low
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let cfg = CshipConfig {
+            context_window: Some(ContextWindowConfig {
+                remaining_percentage: Some(ContextWindowSubfieldConfig {
+                    invert_threshold: Some(true),
+                    warn_threshold: Some(20.0),
+                    warn_style: Some("yellow".to_string()),
+                    critical_threshold: Some(10.0),
+                    critical_style: Some("bold red".to_string()),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let result = render_remaining_percentage(&ctx, &cfg).unwrap();
+        assert!(
+            result.contains("\x1b[1;31m"),
+            "expected bold red for critically low remaining: {result:?}"
+        );
+    }
+
+    #[test]
+    fn test_remaining_percentage_invert_does_not_inherit_parent_threshold() {
+        // invert_threshold=true: parent warn_threshold=80 must NOT fire for remaining=85
+        // (85% remaining is healthy — parent threshold is in non-inverted domain)
+        let ctx = Context {
+            context_window: Some(ContextWindow {
+                remaining_percentage: Some(85.0),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let cfg = CshipConfig {
+            context_window: Some(ContextWindowConfig {
+                warn_threshold: Some(80.0), // parent: warn when 80% USED
+                warn_style: Some("yellow".to_string()),
+                remaining_percentage: Some(ContextWindowSubfieldConfig {
+                    invert_threshold: Some(true),
+                    // no subfield thresholds set → nothing fires
+                    ..Default::default()
+                }),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let result = render_remaining_percentage(&ctx, &cfg).unwrap();
+        assert!(
+            !result.contains('\x1b'),
+            "parent threshold must not fire for remaining_percentage with invert_threshold: {result:?}"
         );
     }
 
