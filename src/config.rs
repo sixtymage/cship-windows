@@ -63,7 +63,29 @@ pub struct CostSubfieldConfig {
     pub disabled: Option<bool>,
     /// Reserved — not yet rendered; included for config schema consistency.
     pub label: Option<String>,
+    pub warn_threshold: Option<f64>,
+    pub warn_style: Option<String>,
+    pub critical_threshold: Option<f64>,
+    pub critical_style: Option<String>,
     pub format: Option<String>,
+}
+
+/// Configuration for individual `[cship.context_window.*]` sub-field modules.
+#[derive(Debug, Deserialize, Default)]
+pub struct ContextWindowSubfieldConfig {
+    pub style: Option<String>,
+    /// Used only in the format path (via `$symbol`); ignored in the default render path.
+    pub symbol: Option<String>,
+    pub disabled: Option<bool>,
+    pub warn_threshold: Option<f64>,
+    pub warn_style: Option<String>,
+    pub critical_threshold: Option<f64>,
+    pub critical_style: Option<String>,
+    pub format: Option<String>,
+    /// When `true`, fires threshold styles when value is BELOW the threshold.
+    /// Use for decreasing-health indicators like `remaining_percentage` (low = bad).
+    /// When set, parent-level thresholds are NOT inherited (they are in the non-inverted domain).
+    pub invert_threshold: Option<bool>,
 }
 
 /// Configuration for `[cship.context_bar]` — visual progress bar with thresholds.
@@ -90,7 +112,21 @@ pub struct ContextWindowConfig {
     pub symbol: Option<String>,
     pub disabled: Option<bool>,
     pub label: Option<String>,
+    pub warn_threshold: Option<f64>,
+    pub warn_style: Option<String>,
+    pub critical_threshold: Option<f64>,
+    pub critical_style: Option<String>,
     pub format: Option<String>,
+    // Per-sub-field configs (map to [cship.context_window.used_percentage] etc.)
+    pub used_percentage: Option<ContextWindowSubfieldConfig>,
+    pub remaining_percentage: Option<ContextWindowSubfieldConfig>,
+    pub size: Option<ContextWindowSubfieldConfig>,
+    pub total_input_tokens: Option<ContextWindowSubfieldConfig>,
+    pub total_output_tokens: Option<ContextWindowSubfieldConfig>,
+    pub current_usage_input_tokens: Option<ContextWindowSubfieldConfig>,
+    pub current_usage_output_tokens: Option<ContextWindowSubfieldConfig>,
+    pub current_usage_cache_creation_input_tokens: Option<ContextWindowSubfieldConfig>,
+    pub current_usage_cache_read_input_tokens: Option<ContextWindowSubfieldConfig>,
 }
 
 /// Configuration for `[cship.vim]` — vim mode display.
