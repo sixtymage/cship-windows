@@ -229,7 +229,7 @@ lines = [
 ]
 
 [cship.model]
-symbol = " " # nf-fa-microchip
+symbol = " " # nf-fa-microchip
 style  = "bold fg:#7aa2f7"
 
 [cship.cost]
@@ -241,7 +241,7 @@ critical_threshold = 5.0
 critical_style     = "bold fg:#f7768e"
 
 [cship.context_bar]
-symbol             = " " # nf-fa-database
+symbol             = " " # nf-fa-database
 format             = "[$symbol$value]($style)"
 width              = 10
 style              = "fg:#7dcfff"
