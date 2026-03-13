@@ -4,7 +4,7 @@ layout: home
 hero:
   name: "⚓ CShip"
   text: ""
-  tagline: Bring Starship's power to Claude Code Status Line. Configure everything in TOML.
+  tagline: Bring Starship's power to Claude Code Status Line.
   actions:
     - theme: brand
       text: Get Started
