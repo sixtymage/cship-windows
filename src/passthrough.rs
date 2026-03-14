@@ -156,10 +156,10 @@ pub fn render_starship_prompt(
     cfg: &crate::config::CshipConfig,
 ) -> Option<String> {
     // Check disabled flag — return silent None
-    if let Some(sp_cfg) = &cfg.starship_prompt {
-        if sp_cfg.disabled == Some(true) {
-            return None;
-        }
+    if let Some(sp_cfg) = &cfg.starship_prompt
+        && sp_cfg.disabled == Some(true)
+    {
+        return None;
     }
 
     let transcript_path = ctx.transcript_path.as_deref().map(Path::new);
