@@ -80,6 +80,7 @@ Everything in the [Claude Code status line documentation](https://code.claude.co
 
 | Token | Description |
 |-------|-------------|
+| `$starship_prompt` | Full rendered Starship prompt (all configured modules in one row) |
 | `$cship.model` | Claude model name |
 | `$cship.cost` | Session cost in USD ($X.XX) |
 | `$cship.context_bar` | Visual progress bar of context window usage |
