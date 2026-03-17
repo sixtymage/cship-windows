@@ -196,6 +196,7 @@ pub fn render_starship_prompt(
         "--terminal-width",
         &width.to_string(),
     ]);
+
     cmd.stdout(Stdio::piped());
     cmd.stderr(Stdio::null());
 
@@ -285,12 +286,25 @@ pub fn render_starship_prompt(
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    let trimmed = stdout.trim_end_matches(&['\r', '\n'][..]);
-    if trimmed.is_empty() {
+    let first_line_only = cfg
+        .starship_prompt
+        .as_ref()
+        .and_then(|sp| sp.first_line_only)
+        .unwrap_or(false);
+    let result = if first_line_only {
+        stdout
+            .lines()
+            .find(|l| !l.trim().is_empty())
+            .unwrap_or("")
+            .to_string()
+    } else {
+        stdout
+            .trim_end_matches(&['\r', '\n'][..])
+            .to_string()
+    };
+    if result.is_empty() {
         return None;
     }
-
-    let result = trimmed.to_string();
 
     // Write to cache for future hits
     if let Some(tp) = transcript_path {

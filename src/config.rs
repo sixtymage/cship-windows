@@ -201,6 +201,10 @@ pub struct UsageLimitsConfig {
 #[derive(Debug, Deserialize, Default)]
 pub struct StarshipPromptConfig {
     pub disabled: Option<bool>,
+    /// When `true`, only the first line of `starship prompt` output is kept.
+    /// Use this to suppress `$character` (the `>` prompt symbol) which lives on
+    /// a second line and is only meaningful in an interactive shell.
+    pub first_line_only: Option<bool>,
 }
 
 /// Result of a config load operation — includes the loaded config and its source.
