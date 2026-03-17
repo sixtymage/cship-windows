@@ -824,6 +824,7 @@ fn test_native_renders_alongside_passthrough_not_installed() {
 
 // ── Story 4.2: Cache and CSHIP_* env var integration tests ────────────────
 
+#[cfg(unix)]
 #[test]
 fn test_passthrough_env_vars_injected_via_cship_model() {
     // Create a fake starship script that echoes $CSHIP_MODEL to stdout.

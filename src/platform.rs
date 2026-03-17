@@ -100,11 +100,30 @@ fn read_credentials_file() -> Option<String> {
     extract_access_token(contents.trim())
 }
 
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
-compile_error!("cship: get_oauth_token() is only supported on macOS and Linux");
+#[cfg(target_os = "windows")]
+pub fn get_oauth_token() -> Result<String, String> {
+    // On Windows, Claude Code typically authenticates via the ANTHROPIC_AUTH_TOKEN
+    // environment variable (API key auth) or via Windows Credential Manager (OAuth).
+    //
+    // The usage_limits module calls /api/oauth/usage which requires an OAuth Bearer
+    // token — API keys (including LiteLLM proxies) will not work with that endpoint.
+    //
+    // TODO: add Windows Credential Manager lookup for standard OAuth installs:
+    //   Target name: "Claude Code-credentials" (LegacyGeneric)
+    //   Crate: windows-credentials or keyring
+    Err(
+        "usage_limits is not yet supported on Windows — \
+         OAuth credential lookup via Windows Credential Manager is not yet implemented"
+            .into(),
+    )
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
+compile_error!("cship: get_oauth_token() is only supported on macOS, Linux, and Windows");
 
 /// Inner implementation with injectable command name for testability.
 /// `tool` is the binary; `args` are the arguments passed to it.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 fn get_oauth_token_with_cmd(tool: &str, args: &[&str]) -> Result<String, String> {
     use std::process::Command;
 
@@ -140,6 +159,7 @@ fn get_oauth_token_with_cmd(tool: &str, args: &[&str]) -> Result<String, String>
 }
 
 /// Parse `{"claudeAiOauth":{"accessToken":"...","refreshToken":"...",...}}` and return the token.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 fn extract_access_token(json: &str) -> Option<String> {
     let v: serde_json::Value = serde_json::from_str(json).ok()?;
     let token = v
@@ -151,6 +171,7 @@ fn extract_access_token(json: &str) -> Option<String> {
 }
 
 /// Return the platform-specific install hint for a missing credential tool.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 fn install_hint(tool: &str) -> String {
     match tool {
         "secret-tool" => {
@@ -167,10 +188,12 @@ fn install_hint(tool: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
     use super::*;
 
-    // These tests exercise the Linux path only; macOS path is validated by code review.
+    // These tests exercise the Linux/macOS path only; macOS path is validated by code review.
 
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
     #[test]
     fn test_tool_not_found_returns_install_hint() {
         // A non-existent binary triggers io::ErrorKind::NotFound on spawn.
@@ -184,6 +207,7 @@ mod tests {
         );
     }
 
+    #[cfg(not(target_os = "windows"))]
     #[test]
     fn test_nonzero_exit_returns_credential_not_found_error() {
         // `/bin/sh -c "exit 1"` always exits with code 1 — simulates "credential not found".
@@ -197,6 +221,7 @@ mod tests {
         );
     }
 
+    #[cfg(not(target_os = "windows"))]
     #[test]
     fn test_successful_token_extraction() {
         // Use `/bin/sh` (absolute path, present on both macOS and Linux) to emit a JSON blob.
@@ -207,6 +232,7 @@ mod tests {
         assert_eq!(result.unwrap(), "sk-ant-test-token");
     }
 
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
     #[test]
     fn test_extract_access_token_valid_json() {
         let json = r#"{"claudeAiOauth":{"accessToken":"sk-ant-oat01-abc","refreshToken":"rt","expiresAt":1234567890,"scopes":["read"]}}"#;
@@ -216,17 +242,20 @@ mod tests {
         );
     }
 
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
     #[test]
     fn test_extract_access_token_missing_field() {
         let json = r#"{"claudeAiOauth":{"refreshToken":"rt"}}"#;
         assert_eq!(extract_access_token(json), None);
     }
 
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
     #[test]
     fn test_extract_access_token_invalid_json() {
         assert_eq!(extract_access_token("not json"), None);
     }
 
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
     #[test]
     fn test_extract_access_token_empty_token() {
         let json = r#"{"claudeAiOauth":{"accessToken":""}}"#;
@@ -255,12 +284,14 @@ mod tests {
         assert_eq!(result, Some("sk-ant-file-token".to_string()));
     }
 
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
     #[test]
     fn test_install_hint_secret_tool() {
         let hint = install_hint("secret-tool");
         assert!(hint.contains("sudo apt install libsecret-tools"), "{hint}");
     }
 
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
     #[test]
     fn test_install_hint_security() {
         let hint = install_hint("security");

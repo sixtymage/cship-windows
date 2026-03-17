@@ -355,6 +355,7 @@ mod tests {
         assert!(result.is_none());
     }
 
+    #[cfg(unix)]
     #[test]
     fn test_render_passthrough_injects_cship_model_env_var() {
         use std::fs;
