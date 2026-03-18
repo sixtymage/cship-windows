@@ -86,6 +86,8 @@ jobs:
             runner: ubuntu-latest
           - target: aarch64-unknown-linux-musl
             runner: ubuntu-24.04-arm
+          - target: x86_64-pc-windows-msvc
+            runner: windows-latest
     steps:
       - uses: actions/checkout@v4
       - name: Install Rust stable
@@ -98,16 +100,29 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Build release binary
         run: cargo build --release --target ${{ matrix.target }}
-      - name: Rename binary
+      - name: Rename binary (Unix)
+        if: runner.os != 'Windows'
         run: cp target/${{ matrix.target }}/release/cship cship-${{ matrix.target }}
-      - name: Validate binary
+      - name: Rename binary (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Copy-Item "target/${{ matrix.target }}/release/cship.exe" "cship-${{ matrix.target }}.exe"
+      - name: Validate binary (Unix)
+        if: runner.os != 'Windows'
         run: |
           file cship-${{ matrix.target }}
           test -s cship-${{ matrix.target }} || { echo "ERROR: binary is empty"; exit 1; }
+      - name: Validate binary (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "cship-${{ matrix.target }}.exe") -or (Get-Item "cship-${{ matrix.target }}.exe").Length -eq 0) {
+            Write-Error "ERROR: binary is empty or missing"; exit 1
+          }
       - uses: actions/upload-artifact@v4
         with:
           name: cship-${{ matrix.target }}
-          path: cship-${{ matrix.target }}
+          path: cship-${{ matrix.target }}*
 
   release:
     name: Publish GitHub Release
