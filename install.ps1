@@ -48,54 +48,17 @@ if (($userPath -split ';') -notcontains $InstallDir) {
     Write-Host "$InstallDir is already in user PATH."
 }
 
-# ── 4. cship.toml — create minimal config (idempotent) ───────────────────────
+# ── 4. cship.toml — download default config (idempotent) ─────────────────────
 $CshipConfig = "$HOME\.config\cship.toml"
 New-Item -ItemType Directory -Force -Path (Split-Path $CshipConfig) | Out-Null
-
-$CshipBlock = @'
-# cship -- Claude Code statusline
-# Full config reference: https://cship.dev
-[cship]
-lines = [
-  "$directory$git_branch$git_status$python$nodejs$rust",
-  "$cship.model $cship.cost $cship.context_bar $cship.usage_limits"
-]
-
-[cship.model]
-symbol = "🤖 "
-style  = "bold cyan"
-
-[cship.context_bar]
-width              = 10
-style              = "fg:#7dcfff"
-warn_threshold     = 40.0
-warn_style         = "fg:#e0af68"
-critical_threshold = 70.0
-critical_style     = "bold fg:#f7768e"
-
-[cship.cost]
-symbol             = "💰 "
-style              = "fg:#a9b1d6"
-warn_threshold     = 2.0
-warn_style         = "fg:#e0af68"
-critical_threshold = 5.0
-critical_style     = "bold fg:#f7768e"
-
-[cship.usage_limits]
-five_hour_format   = "⌛ 5h {pct}% ({reset})"
-seven_day_format   = "📅 7d {pct}% ({reset})"
-separator          = " "
-warn_threshold     = 60.0
-warn_style         = "fg:#e0af68"
-critical_threshold = 80.0
-critical_style     = "bold fg:#f7768e"
-'@
 
 if (Test-Path $CshipConfig) {
     Write-Host "cship.toml already exists at $CshipConfig, skipping."
 } else {
-    Set-Content -Path $CshipConfig -Value $CshipBlock -Encoding UTF8
-    Write-Host "Created minimal cship config at $CshipConfig"
+    $ConfigUrl = "https://raw.githubusercontent.com/$Repo/main/cship.toml"
+    Write-Host "Downloading default config from $ConfigUrl ..."
+    Invoke-WebRequest -Uri $ConfigUrl -OutFile $CshipConfig -UseBasicParsing
+    Write-Host "Created default cship config at $CshipConfig"
 }
 
 # ── 5. ~/.claude/settings.json — wire statusLine ─────────────────────────────
