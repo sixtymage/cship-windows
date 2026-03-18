@@ -2,6 +2,7 @@ pub mod agent;
 pub mod context_bar;
 pub mod context_window;
 pub mod cost;
+pub mod daily_cost;
 pub mod model;
 pub mod session;
 pub mod usage_limits;
@@ -43,6 +44,7 @@ pub const ALL_NATIVE_MODULES: &[&str] = &[
     "cship.workspace.current_dir",
     "cship.workspace.project_dir",
     "cship.usage_limits",
+    "cship.daily_cost",
 ];
 
 /// Static dispatch registry — the ONLY file modified when adding a new native module.
@@ -107,6 +109,8 @@ pub fn render_module(
         "cship.workspace.project_dir" => workspace::render_project_dir(ctx, cfg),
         // Usage limits module — non-blocking thread dispatch for live API data
         "cship.usage_limits" => usage_limits::render(ctx, cfg),
+        // Daily cost module — local JSONL scan, no auth required
+        "cship.daily_cost" => daily_cost::render(ctx, cfg),
         other => {
             tracing::warn!("cship: unknown native module '{other}' — skipping");
             None

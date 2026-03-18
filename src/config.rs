@@ -20,6 +20,7 @@ pub struct CshipConfig {
     pub workspace: Option<WorkspaceConfig>,
     pub usage_limits: Option<UsageLimitsConfig>,
     pub starship_prompt: Option<StarshipPromptConfig>,
+    pub daily_cost: Option<DailyCostConfig>,
 }
 
 /// Per-module config fields shared by all native CShip modules.
@@ -195,6 +196,23 @@ pub struct UsageLimitsConfig {
     pub five_hour_format: Option<String>,
     pub seven_day_format: Option<String>,
     pub separator: Option<String>,
+}
+
+/// Configuration for `[cship.daily_cost]` — today's total spend across all sessions.
+///
+/// Reads `~/.claude/projects/**/*.jsonl` locally; no authentication required.
+#[derive(Debug, Deserialize, Default)]
+pub struct DailyCostConfig {
+    pub disabled: Option<bool>,
+    pub symbol: Option<String>,
+    pub style: Option<String>,
+    pub warn_threshold: Option<f64>,
+    pub warn_style: Option<String>,
+    pub critical_threshold: Option<f64>,
+    pub critical_style: Option<String>,
+    pub format: Option<String>,
+    /// Cache refresh interval in seconds. Default: 60.
+    pub ttl: Option<u64>,
 }
 
 /// Configuration for `[cship.starship_prompt]` — renders full starship prompt as a token.

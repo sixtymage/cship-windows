@@ -1,6 +1,6 @@
 [cship]
 lines = [
-  "$starship_prompt $cship.model $cship.cost $cship.context_bar $cship.usage_limits"
+  "$starship_prompt $cship.model $cship.cost $cship.daily_cost $cship.context_bar $cship.usage_limits"
 ]
 
 [cship.starship_prompt]
@@ -9,6 +9,14 @@ first_line_only = true
 [cship.model]
 symbol = " "
 style  = "bold cyan"
+
+[cship.daily_cost]
+symbol             = "📅 "
+style              = "fg:#a9b1d6"
+warn_threshold     = 50.0
+warn_style         = "fg:#e0af68"
+critical_threshold = 100.0
+critical_style     = "bold fg:#f7768e"
 
 [cship.context_bar]
 symbol             = " "
