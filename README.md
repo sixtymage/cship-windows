@@ -21,7 +21,7 @@
 
 ## 🚀 Install
 
-### ⚡ Method 1: curl installer (recommended)
+### ⚡ Method 1: curl installer — macOS / Linux (recommended)
 
 ```sh
 curl -fsSL https://cship.dev/install.sh | bash
@@ -29,15 +29,27 @@ curl -fsSL https://cship.dev/install.sh | bash
 
 Auto-detects your OS and architecture (macOS arm64/x86_64, Linux x86_64/aarch64), downloads the binary to `~/.local/bin/cship`, creates a starter config at `~/.config/cship.toml`, wires the `statusLine` entry in `~/.claude/settings.json`, and optionally installs [Starship](https://starship.rs) (needed for passthrough modules) and, on Linux, `libsecret-tools` (needed for usage limits).
 
-### 📦 Method 2: cargo install
+### 🪟 Method 2: PowerShell installer — Windows (recommended)
 
-Requires the Rust toolchain.
+Run in a PowerShell terminal (Windows 10/11, PowerShell 5.1 or later):
+
+```powershell
+irm https://raw.githubusercontent.com/sixtymage/cship-windows/main/install.ps1 | iex
+```
+
+Auto-detects your architecture (x86_64), downloads `cship.exe` to `$HOME\.local\bin\cship.exe`, adds it to your user `PATH`, creates a starter config at `$HOME\.config\cship.toml`, and wires the `statusLine` entry in `$HOME\.claude\settings.json`.
+
+> **Note:** If you see a security prompt, you can also download [`install.ps1`](https://raw.githubusercontent.com/sixtymage/cship-windows/main/install.ps1) and run it directly: `.\install.ps1`
+
+### 📦 Method 3: cargo install
+
+Requires the Rust toolchain. Works on all platforms.
 
 ```sh
 cargo install cship
 ```
 
-After installing with `cargo`, wire the statusline manually in `~/.claude/settings.json`:
+After installing with `cargo`, wire the statusline manually in `~/.claude/settings.json` (or `$HOME\.claude\settings.json` on Windows):
 
 ```json
 {
