@@ -137,21 +137,3 @@ jobs:
         with:
           tag_name: ${{ github.event.inputs.version || github.ref_name }}
           files: cship-*/cship-*
-
-  publish:
-    name: Publish to crates.io
-    needs: release
-    if: "!cancelled() && needs.release.result == 'success'"
-    runs-on: ubuntu-latest
-    permissions: {}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.inputs.version || github.ref_name }}
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - name: Publish to crates.io
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-        run: cargo publish
