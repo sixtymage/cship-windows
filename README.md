@@ -41,15 +41,17 @@ Auto-detects your architecture (x86_64), downloads `cship.exe` to `$HOME\.local\
 
 > **Note:** If you see a security prompt, you can also download [`install.ps1`](https://raw.githubusercontent.com/sixtymage/cship-windows/main/install.ps1) and run it directly: `.\install.ps1`
 
-### 📦 Method 3: cargo install
+### 🔨 Method 3: build from source
 
-Requires the Rust toolchain. Works on all platforms.
+Requires the [Rust toolchain](https://rustup.rs). Works on all platforms.
 
 ```sh
-cargo install cship
+git clone https://github.com/sixtymage/cship-windows
+cd cship-windows
+cargo build --release
 ```
 
-After installing with `cargo`, wire the statusline manually in `~/.claude/settings.json` (or `$HOME\.claude\settings.json` on Windows):
+The binary is at `target/release/cship` (or `cship.exe` on Windows). Copy it to a directory on your `PATH`, then wire the statusline manually in `~/.claude/settings.json` (or `$HOME\.claude\settings.json` on Windows):
 
 ```json
 {
@@ -95,12 +97,37 @@ Everything in the [Claude Code status line documentation](https://code.claude.co
 | `$starship_prompt` | Full rendered Starship prompt (all configured modules in one row) |
 | `$cship.model` | Claude model name |
 | `$cship.cost` | Session cost in USD ($X.XX) |
+| `$cship.daily_cost` | Today's total spend across **all** Claude Code sessions ($X.XX) |
 | `$cship.context_bar` | Visual progress bar of context window usage |
 | `$cship.context_window` | Context window tokens (used/total) |
 | `$cship.usage_limits` | API usage limits (5hr / 7-day) |
 | `$cship.agent` | Sub-agent name |
 | `$cship.session` | Session identity info |
 | `$cship.workspace` | Workspace/project directory |
+
+### 📅 Daily cost module
+
+`$cship.daily_cost` shows your total Claude Code spend for today across all sessions, not just the current one. It reads `~/.claude/projects/**/*.jsonl` directly — no authentication or API key required. Results are cached for 60 seconds (configurable via `ttl`).
+
+```toml
+[cship.daily_cost]
+symbol             = "📅 "
+style              = "fg:#a9b1d6"
+warn_threshold     = 5.0
+warn_style         = "fg:#e0af68"
+critical_threshold = 20.0
+critical_style     = "bold fg:#f7768e"
+ttl                = 60    # cache refresh interval in seconds
+```
+
+### 🌌 Starship prompt: `first_line_only`
+
+When using `$starship_prompt`, Starship's `$character` module appends the shell prompt symbol (`❯`) on a second line. Inside a statusline this extra line is unwanted. Set `first_line_only = true` to strip it:
+
+```toml
+[cship.starship_prompt]
+first_line_only = true
+```
 
 Full configuration reference: **https://cship.dev**
 
