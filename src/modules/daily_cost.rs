@@ -91,10 +91,7 @@ fn claude_data_dir() -> Option<std::path::PathBuf> {
     if dir.is_dir() {
         Some(dir)
     } else {
-        tracing::warn!(
-            "cship.daily_cost: ~/.claude not found at {}",
-            dir.display()
-        );
+        tracing::warn!("cship.daily_cost: ~/.claude not found at {}", dir.display());
         None
     }
 }
@@ -218,10 +215,7 @@ fn cost_from_jsonl(path: &std::path::Path, today: &str) -> f64 {
         }
 
         // Filter to today's messages (timestamp field on outer object)
-        let ts = obj
-            .get("timestamp")
-            .and_then(|t| t.as_str())
-            .unwrap_or("");
+        let ts = obj.get("timestamp").and_then(|t| t.as_str()).unwrap_or("");
         if !ts.starts_with(today) {
             continue;
         }
@@ -539,11 +533,8 @@ mod tests {
 
         let cost = cost_from_jsonl(&path, "2026-03-18");
         // Expected: (262*3 + 9093*15 + 586505*3.75 + 3522600*0.30) / 1_000_000
-        let expected = (262.0 * 3.0
-            + 9_093.0 * 15.0
-            + 586_505.0 * 3.75
-            + 3_522_600.0 * 0.30)
-            / 1_000_000.0;
+        let expected =
+            (262.0 * 3.0 + 9_093.0 * 15.0 + 586_505.0 * 3.75 + 3_522_600.0 * 0.30) / 1_000_000.0;
         assert!(
             (cost - expected).abs() < 0.001,
             "expected ~{expected:.3}, got {cost:.3}"

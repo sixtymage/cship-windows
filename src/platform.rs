@@ -111,11 +111,9 @@ pub fn get_oauth_token() -> Result<String, String> {
     // TODO: add Windows Credential Manager lookup for standard OAuth installs:
     //   Target name: "Claude Code-credentials" (LegacyGeneric)
     //   Crate: windows-credentials or keyring
-    Err(
-        "usage_limits is not yet supported on Windows — \
+    Err("usage_limits is not yet supported on Windows — \
          OAuth credential lookup via Windows Credential Manager is not yet implemented"
-            .into(),
-    )
+        .into())
 }
 
 #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]

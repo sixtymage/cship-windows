@@ -298,9 +298,7 @@ pub fn render_starship_prompt(
             .unwrap_or("")
             .to_string()
     } else {
-        stdout
-            .trim_end_matches(&['\r', '\n'][..])
-            .to_string()
+        stdout.trim_end_matches(&['\r', '\n'][..]).to_string()
     };
     if result.is_empty() {
         return None;
